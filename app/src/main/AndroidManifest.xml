@@ -9,14 +9,12 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="AudioFocus Switcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Audiofocusswitcher">
 
     <activity
         android:name=".ui.MainActivity"
         android:exported="true"
-        android:label="AudioFocus Switcher"
         android:theme="@style/Theme.Material3.Light.NoActionBar">
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
