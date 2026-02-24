@@ -42,7 +42,7 @@ public class MainHook implements IXposedHookLoadPackage {
                                 boolean blockEnabled = prefs.getBoolean("ignore_enabled", false);
                                 boolean allowVoice = prefs.getBoolean("allow_voice", true);
 
-                                Log.d(TAG, String.format("Config: enabled=%s, block=%s, voice=%s",
+                                Log.d(TAG, String.format("Config: enabled=%s, ignoreFocusEnable=%s, allowVoice=%s",
                                         moduleEnabled, blockEnabled, allowVoice));
 
                                 if (!moduleEnabled) return;

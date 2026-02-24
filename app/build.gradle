@@ -5,6 +5,10 @@ plugins {
 }
 
 android {
+    signingConfigs {
+        release {
+        }
+    }
     namespace 'ink.kei.audiofocusswitcher'
     compileSdk 36
 
@@ -22,6 +26,12 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            debuggable false
+            jniDebuggable false
+        }
+        debug {
+            debuggable true
+            jniDebuggable false
         }
     }
     compileOptions {
