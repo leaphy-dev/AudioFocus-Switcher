@@ -38,7 +38,6 @@ public class CardButton extends LinearLayout {
 
     public CardButton(Context context,
                       String title,
-                      boolean defaultValue,
                       String description) {
         super(context);
         this.context = context;

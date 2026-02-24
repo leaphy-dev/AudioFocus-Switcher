@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import ink.kei.audiofocusswitcher.ui.view.CardButton;
 import ink.kei.audiofocusswitcher.ui.view.InfoCard;
+import ink.kei.audiofocusswitcher.ui.view.AboutCard;
 
 public class MainActivity extends Activity {
 
@@ -61,13 +62,10 @@ public class MainActivity extends Activity {
 
         //
          enableModelButton = new CardButton(this, "Enable Module",
-                false,
                 "Master switch to enable/disable the module");
          enableIgnore = new CardButton(this, "Block Audio Focus",
-                false,
                 "Make all apps think they always get focus (multiple apps can play simultaneously)");
          allowVoiceCall = new CardButton(this, "Block All Audio Focus",
-                true,
                 "Voice calls can still gain focus when needed");
         //
         enableModelButton.setChecked(prefs != null && prefs.getBoolean("module_enabled", false));
@@ -110,6 +108,8 @@ public class MainActivity extends Activity {
                 "How it works:\n" +
                         "• When enabled, multiple apps can play audio simultaneously\n" +
                         "• Voice calls will still get focus if allowed\n"));
+        mainLayout.addView(createSpacer(15));
+        mainLayout.addView(new AboutCard(this));
 
         LinearLayout spacer = new LinearLayout(this);
         spacer.setLayoutParams(new LinearLayout.LayoutParams(
