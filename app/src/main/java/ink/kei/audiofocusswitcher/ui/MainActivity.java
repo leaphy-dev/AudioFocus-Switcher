@@ -3,15 +3,20 @@ package ink.kei.audiofocusswitcher.ui;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import ink.kei.audiofocusswitcher.ui.view.CardButton;
 import ink.kei.audiofocusswitcher.ui.view.InfoCard;
@@ -22,13 +27,22 @@ public class MainActivity extends Activity {
     private SharedPreferences prefs;
 
     private CardButton enableModelButton;
-    private CardButton enableIgnore;
-    private CardButton allowVoiceCall;
+    private CardButton enableIgnoreButton;
+    private CardButton allowVoiceCallButton;
+
+    private CardButton hideIconButton;
 
     @SuppressLint("WorldReadableFiles")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                        View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        );
+        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
 
         try {
             // 使用 MODE_WORLD_READABLE，LSPosed 会自动处理权限
@@ -39,12 +53,18 @@ public class MainActivity extends Activity {
             prefs = getSharedPreferences("audio_focus_config", Context.MODE_PRIVATE);
         }
 
-        LinearLayout mainLayout = new LinearLayout(this);
-        mainLayout.setOrientation(LinearLayout.VERTICAL);
-        mainLayout.setPadding(30, 30, 30, 30);
-        mainLayout.setLayoutParams(new LinearLayout.LayoutParams(
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setLayoutParams(new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
+        scrollView.setPadding(30, getStatusBarHeight(this)+50, 30, 30);
+        scrollView.setFillViewport(true);
+
+        LinearLayout mainLayout = new LinearLayout(this);
+        mainLayout.setOrientation(LinearLayout.VERTICAL);
+        mainLayout.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
 
         // title
         TextView title = new TextView(this);
@@ -61,14 +81,15 @@ public class MainActivity extends Activity {
 //        mainLayout.addView(createSpacer(10));
 
         //
-         enableModelButton = new CardButton(this, "Enable Module",
+        enableModelButton = new CardButton(this, "Enable Module",
                 "Master switch to enable/disable the module");
-         enableIgnore = new CardButton(this, "Block Audio Focus",
+        enableIgnoreButton = new CardButton(this, "Block Audio Focus",
                 "Make all apps think they always get focus (multiple apps can play simultaneously)");
-         allowVoiceCall = new CardButton(this, "Block All Audio Focus",
+        allowVoiceCallButton = new CardButton(this, "Block All Audio Focus",
                 "Voice calls can still gain focus when needed");
+        hideIconButton = new CardButton(this, "Hide This App Icon",
+                "Hide this app from the launcher.");
         //
-        enableModelButton.setChecked(prefs != null && prefs.getBoolean("module_enabled", false));
         enableModelButton.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (prefs != null) {
                 prefs.edit().putBoolean("module_enabled", isChecked).apply();
@@ -76,31 +97,42 @@ public class MainActivity extends Activity {
             }
         });
         //
-        enableIgnore.setEnabled(prefs != null && prefs.getBoolean("module_enabled", false));
-        enableIgnore.setChecked(prefs != null && prefs.getBoolean("ignore_enabled", false));
-        enableIgnore.setOnCheckedChangeListener((buttonView, isChecked) -> {
+        enableIgnoreButton.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (prefs != null) {
                 prefs.edit().putBoolean("ignore_enabled", isChecked).apply();
                 updateUiState();
             }
         });
         //
-        allowVoiceCall.setEnabled(prefs != null && prefs.getBoolean("ignore_enabled", false));
-        allowVoiceCall.setChecked(prefs != null && prefs.getBoolean("allow_voice", true));
-        allowVoiceCall.setOnCheckedChangeListener((buttonView, isChecked) -> {
+        allowVoiceCallButton.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (prefs != null) {
                 prefs.edit().putBoolean("allow_voice", isChecked).apply();
                 updateUiState();
             }
         });
+        //
+        hideIconButton.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (prefs != null) {
+                prefs.edit().putBoolean("hide_app", isChecked).apply();
+                updateUiState();
+                setAppIconState(prefs.getBoolean("hide_app", false));
+            }
+        });
+
+
+        updateUiState();
 
         mainLayout.addView(enableModelButton);
         mainLayout.addView(createSpacer(15));
         mainLayout.addView(createTextDivider("Audio Focus Block Setting"));
-        mainLayout.addView(enableIgnore);
+        mainLayout.addView(enableIgnoreButton);
         mainLayout.addView(createSpacer(15));
-        mainLayout.addView(allowVoiceCall);
+        mainLayout.addView(allowVoiceCallButton);
         mainLayout.addView(createSpacer(15));
+        mainLayout.addView(createTextDivider("."));
+        mainLayout.addView(hideIconButton);
+        mainLayout.addView(createSpacer(15));
+
         mainLayout.addView(createTextDivider("About"));
 
         //
@@ -117,7 +149,8 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, 1));
         mainLayout.addView(spacer);
 
-        setContentView(mainLayout);
+        scrollView.addView(mainLayout);
+        setContentView(scrollView);
     }
 
     private void updateUiState() {
@@ -126,10 +159,42 @@ public class MainActivity extends Activity {
         boolean moduleEnabled = prefs.getBoolean("module_enabled", false);
         boolean ignoreEnabled = prefs.getBoolean("ignore_enabled", false);
         boolean allowVoice = prefs.getBoolean("allow_voice", true);
+        boolean hideIcon = prefs.getBoolean("hide_app", false);
 
-        enableIgnore.setEnabled(moduleEnabled);
-        allowVoiceCall.setEnabled(moduleEnabled && ignoreEnabled);
+        enableModelButton.setChecked(moduleEnabled);
+        enableIgnoreButton.setChecked(ignoreEnabled);
+        allowVoiceCallButton.setChecked(allowVoice);
+        hideIconButton.setChecked(hideIcon);
 
+        enableIgnoreButton.setEnabled(moduleEnabled);
+        allowVoiceCallButton.setEnabled(moduleEnabled && ignoreEnabled);
+    }
+
+    private void setAppIconState(boolean hide) {
+        ComponentName componentName = new ComponentName(this,
+                "ink.kei.audiofocusswitcher.MainActivityLauncher");
+
+        int newState = hide ? PackageManager.COMPONENT_ENABLED_STATE_DISABLED :
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
+
+        try {
+            getPackageManager().setComponentEnabledSetting(
+                    componentName,
+                    newState,
+                    PackageManager.DONT_KILL_APP
+            );
+
+            Log.d("MainActivity", "App icon " + (hide ? "hidden" : "shown"));
+
+        } catch (Exception e) {
+            Log.e("MainActivity", "Failed to change icon state", e);
+            Toast.makeText(this, "操作失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+
+            if (prefs != null) {
+                boolean currentHideState = prefs.getBoolean("hide_app", false);
+                hideIconButton.setChecked(currentHideState);
+            }
+        }
     }
 
     private View createSpacer(int height) {
@@ -139,7 +204,22 @@ public class MainActivity extends Activity {
         return spacer;
     }
 
+    public static int getStatusBarHeight(Context context) {
+        if (context instanceof Activity) {
+            Activity activity = (Activity) context;
+            ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
 
+            decorView.setOnApplyWindowInsetsListener((v, insets) -> {
+                return insets;
+            });
+
+            WindowInsets insets = decorView.getRootWindowInsets();
+            if (insets != null) {
+                return insets.getSystemWindowInsetTop();
+            }
+        }
+        return 0;
+    }
 
     private int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
