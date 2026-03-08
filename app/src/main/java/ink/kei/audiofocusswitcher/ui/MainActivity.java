@@ -188,7 +188,7 @@ public class MainActivity extends Activity {
 
         } catch (Exception e) {
             Log.e("MainActivity", "Failed to change icon state", e);
-            Toast.makeText(this, "操作失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Failed to change icon state：" + e.getMessage(), Toast.LENGTH_SHORT).show();
 
             if (prefs != null) {
                 boolean currentHideState = prefs.getBoolean("hide_app", false);
